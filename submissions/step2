@@ -1,0 +1,163 @@
+
+
+
+## 手順書（Notion）
+https://www.notion.so/STEP2-DB-5b8243c6c963460187681e5d5df0fcf9?pvs=4
+
+
+Notionが見れなかったときの為、以下に同じものを貼っておきます
+
+======================================
+
+# ＜DB・テーブル作成手順＞
+
+## 作業作ディレクトリ作成
+
+```bash
+mkdir ディレクトリ名
+```
+
+作成したディレクトリへ移動
+
+```bash
+cd ディレクトリ名
+```
+
+## DBをインストール
+
+mysqlインストール
+
+```bash
+brew install mysql
+```
+
+mysql起動
+
+```bash
+brew services start mysql
+```
+
+mysqlに接続
+
+```bash
+mysql -u root -p
+```
+
+## DB作成
+
+DB作成
+
+```sql
+CREATE DATABASE InternetTV;
+```
+
+使用するDBを選択
+
+```sql
+USE InternetTV;
+```
+
+## テーブル作成
+
+テーブル作成
+
+そのままmysqlのコマンドラインで以下のスクリプトを入力。
+今回は各テーブルごとに小分けで入力するように。
+
+```sql
+# チャンネルテーブル
+CREATE TABLE Channel (
+    Channel_ID BIGINT(20) NOT NULL AUTO_INCREMENT,
+    Channel_name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (Channel_ID)
+);
+
+# 番組テーブル
+CREATE TABLE Program (
+    Program_ID BIGINT(20) NOT NULL AUTO_INCREMENT,
+    Program_name VARCHAR(100) NOT NULL,
+    Genre VARCHAR(100) NOT NULL,
+    Program_details TEXT NULL,
+    PRIMARY KEY (Program_ID)
+);
+
+# シーズンテーブル
+CREATE TABLE Season (
+    Season_ID BIGINT(20) NOT NULL AUTO_INCREMENT,
+    Program_ID BIGINT(20) NOT NULL,
+    Season_Number INT NOT NULL,
+    PRIMARY KEY (Season_ID),
+    FOREIGN KEY (Program_ID) REFERENCES Program(Program_ID)
+);
+
+# エピソードテーブル
+CREATE TABLE Episode (
+    Episode_ID BIGINT(20) NOT NULL AUTO_INCREMENT,
+    Program_ID BIGINT(20) NOT NULL,
+    Season_ID BIGINT(20) NOT NULL,
+    Episode_name VARCHAR(100) NOT NULL,
+    Episode_Number INT NOT NULL,
+    Episode_details TEXT NULL,
+    Video_duration TIME NOT NULL,
+    Release_time DATETIME NOT NULL,
+    PRIMARY KEY (Episode_ID),
+    FOREIGN KEY (Program_ID) REFERENCES Program(Program_ID),
+    FOREIGN KEY (Season_ID) REFERENCES Season(Season_ID)
+);
+
+# 番組枠テーブル
+CREATE TABLE Program_slot (
+    Program_slot_ID BIGINT(20) NOT NULL AUTO_INCREMENT,
+    Channel_ID BIGINT(20) NOT NULL,
+    Episode_ID BIGINT(20) NOT NULL,
+    start_time DATETIME NOT NULL,
+    ending_time DATETIME NOT NULL,
+    PRIMARY KEY (Program_slot_ID),
+    FOREIGN KEY (Channel_ID) REFERENCES Channel(Channel_ID),
+    FOREIGN KEY (Episode_ID) REFERENCES Episode(Episode_ID)
+);
+
+# 視聴数テーブル
+CREATE TABLE View_count (
+    Program_slot_ID BIGINT(20) NOT NULL,
+    View_count INT NOT NULL,
+    FOREIGN KEY (Program_slot_ID) REFERENCES Program_slot(Program_slot_ID)
+);
+```
+
+## サンプルデータ生成
+
+```sql
+# チャンネル
+INSERT INTO Channel (Channel_name) VALUES ('ドラマ');
+INSERT INTO Channel (Channel_name) VALUES ('アニメ');
+INSERT INTO Channel (Channel_name) VALUES ('スポーツ');
+
+# 番組
+INSERT INTO Program (Program_name, Genre, Program_details) VALUES ('鬼滅の刃', 'アニメ', '鬼滅の刃の詳細');
+INSERT INTO Program (Program_name, Genre, Program_details) VALUES ('進撃の巨人', 'アニメ', '進撃の巨人の詳細');
+INSERT INTO Program (Program_name, Genre, Program_details) VALUES ('半沢直樹', 'ドラマ', '半沢直樹の詳細');
+
+# シーズン
+INSERT INTO Season (Program_ID, Season_Number) VALUES (1, 1);
+INSERT INTO Season (Program_ID, Season_Number) VALUES (2, 1);
+INSERT INTO Season (Program_ID, Season_Number) VALUES (3, 1);
+
+# エピソード
+INSERT INTO Episode (Program_ID, Season_ID, Episode_name, Episode_Number, Episode_details, Video_duration, Release_time) VALUES (1, 1, '第1話', 1, '第1話の詳細', '00:24:00', '2023-01-01 00:00:00');
+INSERT INTO Episode (Program_ID, Season_ID, Episode_name, Episode_Number, Episode_details, Video_duration, Release_time) VALUES (1, 1, '第2話', 2, '第2話の詳細', '00:24:00', '2023-01-02 00:00:00');
+INSERT INTO Episode (Program_ID, Season_ID, Episode_name, Episode_Number, Episode_details, Video_duration, Release_time) VALUES (2, 2, '第1話', 1, '第1話の詳細', '00:24:00', '2023-01-01 00:00:00');
+INSERT INTO Episode (Program_ID, Season_ID, Episode_name, Episode_Number, Episode_details, Video_duration, Release_time) VALUES (3, 3, '第1話', 1, '第1話の詳細', '00:24:00', '2023-01-01 00:00:00');
+
+# 番組枠
+INSERT INTO Program_slot (Channel_ID, Episode_ID, start_time, ending_time) VALUES (1, 1, '2023-10-01 20:00:00', '2023-10-01 20:24:00');
+INSERT INTO Program_slot (Channel_ID, Episode_ID, start_time, ending_time) VALUES (1, 2, '2023-10-02 20:00:00', '2023-10-02 20:24:00');
+INSERT INTO Program_slot (Channel_ID, Episode_ID, start_time, ending_time) VALUES (2, 3, '2023-10-01 21:00:00', '2023-10-01 21:24:00');
+INSERT INTO Program_slot (Channel_ID, Episode_ID, start_time, ending_time) VALUES (3, 4, '2023-10-01 22:00:00', '2023-10-01 22:24:00');
+
+# 視聴数
+INSERT INTO View_count (Program_slot_ID, View_count) VALUES (1, 1000);
+INSERT INTO View_count (Program_slot_ID, View_count) VALUES (2, 1500);
+INSERT INTO View_count (Program_slot_ID, View_count) VALUES (3, 2000);
+INSERT INTO View_count (Program_slot_ID, View_count) VALUES (4, 2500);
+```

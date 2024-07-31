@@ -1,0 +1,87 @@
+
+
+## データベース操作の回答
+
+https://www.notion.so/STEP3-ff9d477050d04d10a51ac78719b5a7f1?pvs=4
+
+
+Notionが見れなかったときの為、以下に同じものを貼っておきます
+
+
+
+
+======================================
+
+1. よく見られているエピソードを知りたいです。エピソード視聴数トップ3のエピソードタイトルと視聴数を取得してください
+
+```sql
+SELECT Episode.Episode_name, SUM(View_count.View_count) AS total_views
+FROM Episode
+JOIN Program_slot ON Episode.Episode_ID = Program_slot.Episode_ID
+JOIN View_count ON Program_slot.Program_slot_ID = View_count.Program_slot_ID
+GROUP BY Episode.Episode_name
+ORDER BY total_views DESC
+LIMIT 3;
+```
+
+1. よく見られているエピソードの番組情報やシーズン情報も合わせて知りたいです。エピソード視聴数トップ3の番組タイトル、シーズン数、エピソード数、エピソードタイトル、視聴数を取得してください
+
+```sql
+SELECT Program.Program_name, Season.Season_Number, Episode.Episode_Number, Episode.Episode_name, SUM(View_count.View_count) AS total_views
+FROM Episode
+JOIN Season ON Episode.Season_ID = Season.Season_ID
+JOIN Program ON Episode.Program_ID = Program.Program_ID
+JOIN Program_slot ON Episode.Episode_ID = Program_slot.Episode_ID
+JOIN View_count ON Program_slot.Program_slot_ID = View_count.Program_slot_ID
+GROUP BY Program.Program_name, Season.Season_Number, Episode.Episode_Number, Episode.Episode_name
+ORDER BY total_views DESC
+LIMIT 3;
+```
+
+1. 本日の番組表を表示するために、本日、どのチャンネルの、何時から、何の番組が放送されるのかを知りたいです。本日放送される全ての番組に対して、チャンネル名、放送開始時刻(日付+時間)、放送終了時刻、シーズン数、エピソード数、エピソードタイトル、エピソード詳細を取得してください。なお、番組の開始時刻が本日のものを本日方法される番組とみなすものとします
+
+```sql
+SELECT Channel.Channel_name, Program_slot.start_time, Program_slot.ending_time, Season.Season_Number, Episode.Episode_Number, Episode.Episode_name, Episode.Episode_details
+FROM Program_slot
+JOIN Channel ON Program_slot.Channel_ID = Channel.Channel_ID
+JOIN Episode ON Program_slot.Episode_ID = Episode.Episode_ID
+JOIN Season ON Episode.Season_ID = Season.Season_ID
+WHERE DATE(Program_slot.start_time) = CURDATE();
+```
+
+1. ドラマというチャンネルがあったとして、ドラマのチャンネルの番組表を表示するために、本日から一週間分、何日の何時から何の番組が放送されるのかを知りたいです。ドラマのチャンネルに対して、放送開始時刻、放送終了時刻、シーズン数、エピソード数、エピソードタイトル、エピソード詳細を本日から一週間分取得してください
+
+```sql
+SELECT Program_slot.start_time, Program_slot.ending_time, Season.Season_Number, Episode.Episode_Number, Episode.Episode_name, Episode.Episode_details
+FROM Program_slot
+JOIN Channel ON Program_slot.Channel_ID = Channel.Channel_ID
+JOIN Episode ON Program_slot.Episode_ID = Episode.Episode_ID
+JOIN Season ON Episode.Season_ID = Season.Season_ID
+WHERE Channel.Channel_name = 'ドラマ' AND Program_slot.start_time BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY);
+```
+
+1. (advanced) 直近一週間で最も見られた番組が知りたいです。直近一週間に放送された番組の中で、エピソード視聴数合計トップ2の番組に対して、番組タイトル、視聴数を取得してください
+
+```sql
+SELECT Program.Program_name, SUM(View_count.View_count) AS total_views
+FROM Program
+JOIN Episode ON Program.Program_ID = Episode.Program_ID
+JOIN Program_slot ON Episode.Episode_ID = Program_slot.Episode_ID
+JOIN View_count ON Program_slot.Program_slot_ID = View_count.Program_slot_ID
+WHERE Program_slot.start_time BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE()
+GROUP BY Program.Program_name
+ORDER BY total_views DESC
+LIMIT 2;
+```
+
+1.  (advanced) ジャンルごとの番組の視聴数ランキングを知りたいです。番組の視聴数ランキングはエピソードの平均視聴数ランキングとします。ジャンルごとに視聴数トップの番組に対して、ジャンル名、番組タイトル、エピソード平均視聴数を取得してください。
+
+```sql
+SELECT Program.Genre, Program.Program_name, AVG(View_count.View_count) AS avg_views
+FROM Program
+JOIN Episode ON Program.Program_ID = Episode.Program_ID
+JOIN Program_slot ON Episode.Episode_ID = Program_slot.Episode_ID
+JOIN View_count ON Program_slot.Program_slot_ID = View_count.Program_slot_ID
+GROUP BY Program.Genre, Program.Program_name
+ORDER BY Program.Genre, avg_views DESC;
+```
